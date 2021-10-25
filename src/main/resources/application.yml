@@ -1,0 +1,35 @@
+server:
+  servlet:
+    context-path: /community
+
+
+#将thymeleaf的缓存关闭，但是在实际项目中是打开的。
+spring:
+  thymeleaf:
+    cache: false
+    #配置数据源信息
+  datasource:
+    password: root
+    username: root
+    url: jdbc:mysql:///community?serverTimezone=UTC
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+#配置mybatis
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.nowcode.commuity.domain
+  configuration:
+    map-underscore-to-camel-case: true
+    use-generated-keys: true
+
+#设置日志级别
+logging:
+  level:
+    com.nowcode.commuity: debug
+  file:
+    path: d:/code/work/data/nowcode/community.log
+
+pagehelper:
+  reasonable: true
+  support-methods-arguments: true
+  helper-dialect: mysql

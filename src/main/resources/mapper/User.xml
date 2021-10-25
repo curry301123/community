@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nowcode.commuity.mapper.UserMapper">
+
+    <sql id="insertFields">
+        username,password,salt,email,type,status,activation_code,header_url,create_time
+    </sql>
+    <sql id="userFields">
+        id,username,password,salt,email,type,status,activation_code,header_url,create_time
+    </sql>
+    <select id="findById" resultType="User">
+        select <include refid="userFields"></include>
+        from user where id = #{userId}
+    </select>
+
+    <select id="findByName" resultType="User">
+        select <include refid="userFields"></include>
+        from user where id = #{username}
+    </select>
+
+    <select id="findByEmail" resultType="User">
+        select <include refid="userFields"></include>
+        from user where id = #{email}
+    </select>
+<!--因为在mysql中id是自增的，所以通过设置keyProperty，将自增的id值，赋给User对象中的UserId属性-->
+    <insert id="insertUser" parameterType="User" keyProperty="userId">
+        insert into user (<include refid="insertFields"></include>)
+        values (#{username},#{password},#{salt},#{email},#{type},#{status},#{activationCode},#{url},#{createTime})
+    </insert>
+    
+    <update id="updateStatus" >
+        update user set status = #{status} where id = #{id}
+    </update>
+
+    <update id="updateHeader" >
+        update user set header_url = #{url} where id = #{id}
+    </update>
+
+    <update id="updatePassword" >
+        update user set password = #{password} where id = #{id}
+    </update>
+
+
+</mapper>
