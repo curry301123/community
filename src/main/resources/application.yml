@@ -13,6 +13,23 @@ spring:
     username: root
     url: jdbc:mysql:///community?serverTimezone=UTC
     driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: smtp.qq.com
+    port: 465
+    username: 1725675802@qq.com
+    password: xnhictybylkihhhb
+    protocol: smtps
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable: true
+            required: true
+          ssl:
+            enable: true
+        smtl:
+          auth=true: true
+
 
 #配置mybatis
 mybatis:
@@ -28,8 +45,9 @@ logging:
     com.nowcode.commuity: debug
   file:
     path: d:/code/work/data/nowcode/community.log
-
+#配置插件助手
 pagehelper:
   reasonable: true
   support-methods-arguments: true
   helper-dialect: mysql
+
