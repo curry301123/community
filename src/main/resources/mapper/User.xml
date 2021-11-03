@@ -15,17 +15,17 @@
 
     <select id="findByName" resultType="User">
         select <include refid="userFields"></include>
-        from user where id = #{username}
+        from user where username = #{username}
     </select>
 
     <select id="findByEmail" resultType="User">
         select <include refid="userFields"></include>
-        from user where id = #{email}
+        from user where email = #{email}
     </select>
 <!--因为在mysql中id是自增的，所以通过设置keyProperty，将自增的id值，赋给User对象中的UserId属性-->
-    <insert id="insertUser" parameterType="User" keyProperty="userId">
+    <insert id="insertUser" parameterType="User" keyProperty="id">
         insert into user (<include refid="insertFields"></include>)
-        values (#{username},#{password},#{salt},#{email},#{type},#{status},#{activationCode},#{url},#{createTime})
+        values (#{username},#{password},#{salt},#{email},#{type},#{status},#{activationCode},#{headerUrl},#{createTime})
     </insert>
     
     <update id="updateStatus" >
