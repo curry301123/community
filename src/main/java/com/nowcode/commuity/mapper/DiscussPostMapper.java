@@ -26,4 +26,31 @@ public interface DiscussPostMapper {
      */
     public int selectAll(@Param("userId") int userId);
 
+    /**
+     * 发布新贴子
+     * @param post
+     * @return
+     */
+    int insertDiscussPost(DiscussPost post);
+
+    /**
+     * 根据帖子id查询帖子内容
+     * @param id
+     * @return
+     */
+    DiscussPost selectPostDetail(int id);
+
+    /**
+     * 更新帖子评论数量
+     * @param id 帖子id
+     * @param commentCount 评论数量
+     * @return
+     */
+    int updateCommentCount(int id,int commentCount);
+
+
+
+
+
+
 }

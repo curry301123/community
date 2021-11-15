@@ -54,4 +54,5 @@ pagehelper:
 commuity:
   path:
     domain: http://localhost:8080
+  upload: d:/code/work/data/upload
 

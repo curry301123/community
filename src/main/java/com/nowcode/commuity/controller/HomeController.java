@@ -54,8 +54,6 @@ public class HomeController {
     @RequestMapping(path = "/index",method = RequestMethod.GET)
     public String getIndexPage(Model model, @RequestParam(required = false,defaultValue = "1") Integer pageNum,
                                @RequestParam(required = false,defaultValue = "10") Integer pageSize){
-        //方法调用之前，SpringMvc会自动实例化Model和Page,并将Page注入Model
-        //所以在thymeleaf中可以直接访问Page对象中的数据
         PageHelper.startPage(pageNum,pageSize);
         List<DiscussPost> list = discussPostService.findDiscussPost(0);
         List<Map<String,Object>> discussPosts = new ArrayList<>();
@@ -73,6 +71,7 @@ public class HomeController {
         model.addAttribute("pageTotal",pageInfo.getPages());
         model.addAttribute("pageNum",pageNum);
         model.addAttribute("navigate",pageInfo.getNavigatepageNums());
+
         return "/index";
     }
 }

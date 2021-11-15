@@ -9,7 +9,7 @@ public class DiscussPost {
     private String content;
     private int type;
     private int status;
-    private Date creatTime;
+    private Date createTime;
     private int commentCount;
     private int score;
 
@@ -61,12 +61,12 @@ public class DiscussPost {
         this.status = status;
     }
 
-    public Date getCreatTime() {
-        return creatTime;
+    public Date getCreateTime() {
+        return createTime;
     }
 
-    public void setCreatTime(Date creatTime) {
-        this.creatTime = creatTime;
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
     }
 
     public int getCommentCount() {
@@ -94,7 +94,7 @@ public class DiscussPost {
                 ", content='" + content + '\'' +
                 ", type=" + type +
                 ", status=" + status +
-                ", creatTime=" + creatTime +
+                ", creatTime=" + createTime +
                 ", commentCount=" + commentCount +
                 ", score=" + score +
                 '}';

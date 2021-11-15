@@ -68,6 +68,8 @@ public class AlphaController {
 
         cookie.setPath("/community/alpha");
 
+        response.addCookie(cookie);
+
         return "set cookie";
     }
 
@@ -76,6 +78,14 @@ public class AlphaController {
     public String getCookie(@CookieValue("code") String code){
         System.out.println(code);
         return "get cookie";
+    }
+
+    @RequestMapping(path = "/ajax",method = RequestMethod.POST)
+    @ResponseBody
+    public String testAjax(String name,int age){
+        System.out.println(name);
+        System.out.println(age);
+        return CommunityUtil.getJSONSting(0,"操作成功");
     }
 
 }

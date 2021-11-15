@@ -1,6 +1,8 @@
 package com.nowcode.commuity.service;
 
+import com.nowcode.commuity.domain.LoginTicket;
 import com.nowcode.commuity.domain.User;
+import com.nowcode.commuity.mapper.LoginMapper;
 import com.nowcode.commuity.mapper.UserMapper;
 import com.nowcode.commuity.util.CommunityUtil;
 import com.nowcode.commuity.util.Constant;
@@ -22,6 +24,9 @@ public class UserService implements Constant {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private LoginMapper loginMapper;
 
     @Autowired
     private MailClient mailClient;
@@ -103,12 +108,88 @@ public class UserService implements Constant {
          }
     }
 
-
-
-
     public User findById(int userId){
         return userMapper.findById(userId);
     }
+
+    /*
+    *
+    * 登录逻辑处理
+    * */
+
+    public Map<String,Object> userLogin(String username,String password,long expired){
+        Map<String,Object> map = new HashMap<>();
+        if(StringUtils.isBlank(username)){
+            map.put("usernameMsg","用户名为空!");
+            return map;
+        }
+        if(StringUtils.isBlank(password)){
+            map.put("passwordMsg","密码为空!");
+            return map;
+        }
+        if(userMapper.findByName(username) == null){
+            map.put("usernameMsg","该用户不存在!");
+            return map;
+        }
+        User user = userMapper.findByName(username);
+        String pass = CommunityUtil.md5(password+user.getSalt());
+
+        if(user.getStatus() == 0){
+            map.put("activeMsg","该账号没有激活!");
+            return map;
+        }
+
+        if(!pass.equals(user.getPassword())){
+            map.put("passwordMsg","密码错误!");
+            return map;
+        }
+
+        LoginTicket loginTicket = new LoginTicket();
+        //生成登录凭证
+        loginTicket.setTicket(CommunityUtil.generateUUID());
+        loginTicket.setUserId(user.getId());
+        loginTicket.setExpired(new Date(System.currentTimeMillis()+expired*1000));
+        loginTicket.setStatus(0);
+
+        loginMapper.insertLoginTicket(loginTicket);
+        map.put("ticket",loginTicket.getTicket());
+
+        return map;
+    }
+
+    public void logout(String ticket){
+        loginMapper.UpdateStatus(ticket,1);
+    }
+
+    public LoginTicket findByTicket(String ticket){
+        LoginTicket loginTicket = loginMapper.selectByTicket(ticket);
+
+        return loginTicket;
+    }
+
+    public int updateHeadUrl(int userId,String headUrl){
+        return userMapper.updateHeader(userId,headUrl);
+    }
+
+    public Map<String,Object> updatePassword(User user,String password,String newPass,String cookie){
+       String salt = user.getSalt();
+       String originalPass = CommunityUtil.md5(password+salt);
+       Map<String,Object> map = new HashMap<>();
+       if(!originalPass.equals(user.getPassword())){
+           map.put("fixMsg","初始密码错误！");
+           return map;
+       }else {
+           LoginTicket loginTicket = loginMapper.selectByTicket(cookie);
+           String newFixPass = CommunityUtil.md5(newPass+salt);
+           userMapper.updatePassword(user.getId(),newFixPass);
+           String ticket = loginTicket.getTicket();
+           loginMapper.UpdateStatus(ticket,1);
+           return map;
+       }
+
+    }
+
+
 
 
 }
