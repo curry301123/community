@@ -11,9 +11,8 @@ public class Page {
 
     private String path;
 
-    public int getCurrent() {
-        return current;
-    }
+
+
 
     public void setCurrent(int current) {
         if(current >= 1){
@@ -34,6 +33,9 @@ public class Page {
 
     public int getRows() {
         return rows;
+    }
+    public int getCurrent() {
+        return current;
     }
 
     public void setRows(int rows) {

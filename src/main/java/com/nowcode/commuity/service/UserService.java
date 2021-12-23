@@ -7,17 +7,18 @@ import com.nowcode.commuity.mapper.UserMapper;
 import com.nowcode.commuity.util.CommunityUtil;
 import com.nowcode.commuity.util.Constant;
 import com.nowcode.commuity.util.MailClient;
+import com.nowcode.commuity.util.RedisLikeUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Service
 public class UserService implements Constant {
@@ -25,8 +26,8 @@ public class UserService implements Constant {
     @Autowired
     private UserMapper userMapper;
 
-    @Autowired
-    private LoginMapper loginMapper;
+//    @Autowired
+//    private LoginMapper loginMapper;
 
     @Autowired
     private MailClient mailClient;
@@ -39,6 +40,10 @@ public class UserService implements Constant {
 
     @Value("${server.servlet.context-path}")
     private String contextPath;
+
+    @Qualifier("redisTemplate")
+    @Autowired
+    private RedisTemplate template;
 
 
     public Map<String,Object> register(User user){
@@ -102,6 +107,7 @@ public class UserService implements Constant {
              return ACTIVATION_REPEAT;
          }else if(user.getActivationCode().equals(code)){
              userMapper.updateStatus(id,1);
+             clearCache(id);
              return ACTIVATION_SUCCESS;
          }else {
              return ACTIVATION_FAILED;
@@ -109,7 +115,12 @@ public class UserService implements Constant {
     }
 
     public User findById(int userId){
-        return userMapper.findById(userId);
+        User user = findCache(userId);
+        if(user == null){
+            user = initCache(userId);
+        }
+        return user;
+        //return userMapper.findById(userId);
     }
 
     /*
@@ -150,26 +161,38 @@ public class UserService implements Constant {
         loginTicket.setUserId(user.getId());
         loginTicket.setExpired(new Date(System.currentTimeMillis()+expired*1000));
         loginTicket.setStatus(0);
+        String ticketKey = RedisLikeUtil.getTicketKey(loginTicket.getTicket());
+        template.opsForValue().set(ticketKey,loginTicket);
 
-        loginMapper.insertLoginTicket(loginTicket);
+        //loginMapper.insertLoginTicket(loginTicket);
         map.put("ticket",loginTicket.getTicket());
 
         return map;
     }
 
     public void logout(String ticket){
-        loginMapper.UpdateStatus(ticket,1);
+        String ticketKey = RedisLikeUtil.getTicketKey(ticket);
+        LoginTicket loginTicket = (LoginTicket) template.opsForValue().get(ticketKey);
+        loginTicket.setStatus(1);
+        template.opsForValue().set(ticketKey,loginTicket);
+        //loginMapper.UpdateStatus(ticket,1);
     }
 
     public LoginTicket findByTicket(String ticket){
-        LoginTicket loginTicket = loginMapper.selectByTicket(ticket);
-
-        return loginTicket;
+        String ticketKey = RedisLikeUtil.getTicketKey(ticket);
+        return (LoginTicket) template.opsForValue().get(ticketKey);
+//        LoginTicket loginTicket = loginMapper.selectByTicket(ticket);
+//
+//        return loginTicket;
     }
 
     public int updateHeadUrl(int userId,String headUrl){
-        return userMapper.updateHeader(userId,headUrl);
+        //return userMapper.updateHeader(userId,headUrl);
+        int num = userMapper.updateHeader(userId,headUrl);
+        clearCache(userId);
+        return num;
     }
+
 
     public Map<String,Object> updatePassword(User user,String password,String newPass,String cookie){
        String salt = user.getSalt();
@@ -179,14 +202,63 @@ public class UserService implements Constant {
            map.put("fixMsg","初始密码错误！");
            return map;
        }else {
-           LoginTicket loginTicket = loginMapper.selectByTicket(cookie);
+           String ticketKey = RedisLikeUtil.getTicketKey(cookie);
+           //LoginTicket loginTicket = loginMapper.selectByTicket(cookie);
+           LoginTicket loginTicket = (LoginTicket) template.opsForValue().get(ticketKey);
            String newFixPass = CommunityUtil.md5(newPass+salt);
            userMapper.updatePassword(user.getId(),newFixPass);
-           String ticket = loginTicket.getTicket();
-           loginMapper.UpdateStatus(ticket,1);
+           clearCache(user.getId());
+           //String ticket = loginTicket.getTicket();
+           //loginMapper.UpdateStatus(ticket,1);
+           loginTicket.setStatus(1);
+           template.opsForValue().set(ticketKey,loginTicket);
            return map;
        }
 
+    }
+
+    public User findByName(String name){
+        return userMapper.findByName(name);
+    }
+
+    //从缓存中取值
+    public User findCache(int userId){
+        String userKey = RedisLikeUtil.getUserKey(userId);
+        User user = (User) template.opsForValue().get(userKey);
+        return user;
+    }
+
+    //如果缓存中没有，初始化缓存
+    public User initCache(int userId){
+        String userKey = RedisLikeUtil.getUserKey(userId);
+        User user = userMapper.findById(userId);
+        template.opsForValue().set(userKey,user);
+        return user;
+    }
+
+    //清除缓存
+    private void clearCache(int userId){
+        String userKey = RedisLikeUtil.getUserKey(userId);
+        template.delete(userKey);
+    }
+
+    public Collection<? extends GrantedAuthority> getAuthorities(int userId){
+        User user = this.findById(userId);
+        List<GrantedAuthority> list = new ArrayList<>();
+        list.add(new GrantedAuthority() {
+            @Override
+            public String getAuthority() {
+                switch (user.getType()){
+                    case 1:
+                        return AUTHORITY_ADMIN;
+                    case 2:
+                        return AUTHORITY_MODERATOR;
+                    default:
+                        return AUTHORITY_USER;
+                }
+            }
+        });
+        return list;
     }
 
 

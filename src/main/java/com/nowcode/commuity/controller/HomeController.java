@@ -7,7 +7,9 @@ import com.nowcode.commuity.domain.Page;
 import com.nowcode.commuity.domain.User;
 import com.nowcode.commuity.mapper.DiscussPostMapper;
 import com.nowcode.commuity.service.DiscussPostService;
+import com.nowcode.commuity.service.LikeService;
 import com.nowcode.commuity.service.UserService;
+import com.nowcode.commuity.util.Constant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Controller;
@@ -23,12 +25,15 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-public class HomeController {
+public class HomeController implements Constant {
     @Autowired
     private DiscussPostService discussPostService;
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private LikeService likeService;
 
     /*@RequestMapping(path = "/index",method = RequestMethod.GET)
     public String getIndexPage(Model model,Page page){
@@ -53,9 +58,10 @@ public class HomeController {
 
     @RequestMapping(path = "/index",method = RequestMethod.GET)
     public String getIndexPage(Model model, @RequestParam(required = false,defaultValue = "1") Integer pageNum,
-                               @RequestParam(required = false,defaultValue = "10") Integer pageSize){
+                               @RequestParam(required = false,defaultValue = "10") Integer pageSize,
+                               @RequestParam(name = "orderMode",defaultValue = "0") int orderMode){
         PageHelper.startPage(pageNum,pageSize);
-        List<DiscussPost> list = discussPostService.findDiscussPost(0);
+        List<DiscussPost> list = discussPostService.findDiscussPost(0,pageNum,pageSize,orderMode);
         List<Map<String,Object>> discussPosts = new ArrayList<>();
         if(list != null){
             for(DiscussPost post :list){
@@ -63,9 +69,12 @@ public class HomeController {
                 map.put("post",post);
                 User user = userService.findById(post.getUserId());
                 map.put("user",user);
+                long likeCount = likeService.likeNums(ENTITY_TYPE_POST,post.getId());
+                map.put("likeCount",likeCount);
                 discussPosts.add(map);
             }
         }
+        model.addAttribute("orderMode",orderMode);
         PageInfo pageInfo = new PageInfo(list,5);
         model.addAttribute("discussPosts",discussPosts);
         model.addAttribute("pageTotal",pageInfo.getPages());
@@ -73,5 +82,15 @@ public class HomeController {
         model.addAttribute("navigate",pageInfo.getNavigatepageNums());
 
         return "/index";
+    }
+
+    @RequestMapping(value = "/error",method = RequestMethod.GET)
+    public String getError(){
+        return "/error/500";
+    }
+
+    @RequestMapping(value = "/denied",method = RequestMethod.GET)
+    public String getDeniedPage(){
+        return "/error/404";
     }
 }

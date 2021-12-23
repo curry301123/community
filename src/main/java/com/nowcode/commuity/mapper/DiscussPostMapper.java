@@ -16,8 +16,15 @@ public interface DiscussPostMapper {
      * @param
      * @return
      */
-//    public List<DiscussPost> selectDiscussPost(int userId,int offset,int limit);
-      public List<DiscussPost> selectDiscussPost(@Param("userId") int userId);
+      public List<DiscussPost> selectDiscussPostList(int userId,int offset,int limit);
+
+    /**
+     *
+     * @param userId
+     * @param orderMode 排序方式，默认为0，如果为1，则按照热度来排
+     * @return
+     */
+      public List<DiscussPost> selectDiscussPost( int userId,int orderMode);
 
     /**
      *返回总贴数
@@ -47,6 +54,24 @@ public interface DiscussPostMapper {
      * @return
      */
     int updateCommentCount(int id,int commentCount);
+
+    /**
+     * 更新帖子类型（置顶，加精）
+     * @param id 帖子id
+     * @param type 帖子类型
+     * @return
+     */
+    int updateType(int id,int type);
+
+    /**
+     * 更新帖子状态
+     * @param id
+     * @param status
+     * @return
+     */
+    int updateStatus(int id,int status);
+
+    int updateScore(int id,double score);
 
 
 

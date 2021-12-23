@@ -50,4 +50,8 @@ public class CommentService implements Constant {
         return row;
     }
 
+    public Comment findCommentById(int id){
+        return commentMapper.selectCommentById(id);
+    }
+
 }

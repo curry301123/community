@@ -29,6 +29,43 @@ spring:
             enable: true
         smtl:
           auth=true: true
+  redis:
+    database: 11
+    host: localhost
+    port: 6379
+    timeout: 5000
+    #password:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-consumer-group
+      enable-auto-commit: true
+      auto-commit-interval: 3000
+  quartz:
+    job-store-type: jdbc
+    scheduler-name: communityScheduler
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceId: AUTO
+          jobStore:
+            class: org.quartz.impl.jdbcjobstore.JobStoreTX
+            driverDelegateClass: org.quartz.impl.jdbcjobstore.StdJDBCDelegate
+            isClustered: true
+          threadPool:
+            class:  org.quartz.simpl.SimpleThreadPool
+            threadCount: 5
+  task:
+    execution:
+      pool:
+        core-size: 5
+        max-size: 15
+        queue-capacity: 100
+    scheduling:
+      pool:
+        size: 5
+
 
 
 #配置mybatis
@@ -55,4 +92,34 @@ commuity:
   path:
     domain: http://localhost:8080
   upload: d:/code/work/data/upload
+
+elasticSearch:
+  url: 127.0.0.1:9200
+
+#Wk
+wk:
+  image:
+    command: d:/code/work/wkhtmltopdf/bin/wkhtmltoimage
+    storage: d:/code/work/data/wk-image
+
+#qiniu
+qiniu:
+  key:
+    access: -ymO9N3Y3ZDfGaZ1VEqDMtYt1Sb7hjp-KNfuAqWp
+    secret: xDq8lKBlvwIxiUK1491xV1gFU8jYYhX2jTc472sv
+  bucket:
+    header:
+      name: community2header2
+      url: http://r4atjzvuk.hn-bkt.clouddn.com
+    share:
+      name: community2share2
+      url: http://r4auraqrj.hn-bkt.clouddn.com
+#caffeine
+caffeine:
+  posts:
+    maxsize: 15
+    expire-seconds: 180
+
+#taskExecutionProperties
+
 

@@ -2,10 +2,15 @@ package com.nowcode.commuity.controller;
 
 import com.nowcode.commuity.annoation.LoginRequired;
 import com.nowcode.commuity.domain.User;
+import com.nowcode.commuity.service.FolloweService;
+import com.nowcode.commuity.service.LikeService;
 import com.nowcode.commuity.service.UserService;
 import com.nowcode.commuity.util.CommunityUtil;
+import com.nowcode.commuity.util.Constant;
 import com.nowcode.commuity.util.CookieUtil;
 import com.nowcode.commuity.util.HostHolder;
+import com.qiniu.util.Auth;
+import com.qiniu.util.StringMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,12 +21,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.swing.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -30,12 +37,15 @@ import java.util.Map;
 
 @Controller
 @RequestMapping(path = "/user")
-public class UserController {
+public class UserController implements Constant {
     @Autowired
     private UserService userService;
 
     @Autowired
     private HostHolder holder;
+
+    @Autowired
+    private FolloweService followeService;
 
     @Value("${commuity.path.domain}")
     private String domain;
@@ -46,14 +56,52 @@ public class UserController {
     @Value("${server.servlet.context-path}")
     private String contextPath;
 
+    @Value("${qiniu.key.access}")
+    private String accessKey;
+
+    @Value("${qiniu.key.secret}")
+    private String secretKey;
+
+    @Value("${qiniu.bucket.header.name}")
+    private String headerBucketName;
+
+    @Value("${qiniu.bucket.header.url}")
+    private String headerBucketUrl;
+
+    @Autowired
+    private LikeService likeService;
+
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     @LoginRequired
     @RequestMapping(path = "/setting",method = RequestMethod.GET)
-    public String getSettingPath(){
+    public String getSettingPath(Model model){
+        //生成上传文件名称
+        String fileName = CommunityUtil.generateUUID();
+        //设置响应信息
+        StringMap policy = new StringMap();
+        policy.put("returnBody",CommunityUtil.getJSONSting(0));
+        //生成上传凭证
+        Auth auth = Auth.create(accessKey,secretKey);
+        String uploadToken = auth.uploadToken(headerBucketName,fileName,3600,policy);
+        model.addAttribute("uploadToken",uploadToken);
+        model.addAttribute("fileName",fileName);
         return "/site/setting";
     }
 
+    //更新头像路径
+    @RequestMapping(path = "/header/url",method = RequestMethod.POST)
+    @ResponseBody
+    public String updateHeaderUrl(String fileName){
+        if(StringUtils.isBlank(fileName)){
+            return CommunityUtil.getJSONSting(1,"文件名不能为空");
+        }
+        String url = headerBucketUrl+"/"+fileName;
+        userService.updateHeadUrl(holder.getUser().getId(),url);
+        return CommunityUtil.getJSONSting(0);
+    }
+
+    //废弃
     @LoginRequired
     @RequestMapping(path = "/upload",method = RequestMethod.POST)
     public String uploadHeader(MultipartFile headerImg, Model model){
@@ -88,6 +136,7 @@ public class UserController {
 
         return "redirect:/index";
     }
+    //废弃
     @RequestMapping(path ="/header/{filename}",method = RequestMethod.GET)
     public void getHeader(@PathVariable("filename") String filename, HttpServletResponse response){
         filename = upload+"/"+filename;
@@ -135,5 +184,29 @@ public class UserController {
             return "/site/setting";
         }
             return "redirect:/login";
+    }
+
+    @RequestMapping(value = "/profile/{userId}",method = RequestMethod.GET)
+    public String profile(@PathVariable("userId") int userId,Model model){
+        User user = userService.findById(userId);
+        if(user == null){
+            throw new RuntimeException("该用户不存在");
+        }
+        model.addAttribute("user",user);
+        int likeCount = likeService.userLikeNums(userId);
+        model.addAttribute("likeCount",likeCount);
+
+        long followeeNum = followeService.followeeNum(userId,ENTITY_TYPE_USER);
+        long followerNum = followeService.followerNum(ENTITY_TYPE_USER,userId);
+        boolean followStatus = false;
+        if(holder.getUser() !=null){
+            followStatus = followeService.followStatus(holder.getUser().getId(),ENTITY_TYPE_USER,userId);
+        }
+        model.addAttribute("followeeNum",followeeNum);
+        model.addAttribute("followerNum",followerNum);
+        model.addAttribute("followStatus",followStatus);
+
+
+        return "/site/profile";
     }
 }
